@@ -1,7 +1,8 @@
 # matrym-hashchain
 
+[![PyPI](https://img.shields.io/pypi/v/matrym-hashchain)](https://pypi.org/project/matrym-hashchain/)
 [![CI](https://github.com/MatrymLabs/matrym-hashchain/actions/workflows/ci.yml/badge.svg)](https://github.com/MatrymLabs/matrym-hashchain/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.10+-blue)
+[![Python](https://img.shields.io/pypi/pyversions/matrym-hashchain)](https://pypi.org/project/matrym-hashchain/)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
@@ -15,12 +16,10 @@ records** - the kind of thing a compliance, finance, or records system needs and
 ## Install
 
 ```bash
-pip install matrym-hashchain                                    # once released to PyPI
-pip install git+https://github.com/MatrymLabs/matrym-hashchain  # or straight from GitHub, today
+pip install matrym-hashchain
 ```
 
-PyPI publishing is wired up via [trusted publishing](RELEASING.md) (no stored token); the
-`pip install matrym-hashchain` line goes live with the first tagged release.
+Released to PyPI via [trusted publishing](RELEASING.md) (GitHub OIDC, no stored token).
 
 ## Use
 
