@@ -1,0 +1,48 @@
+name: Release to PyPI
+
+# Publishes on a GitHub Release, via PyPI Trusted Publishing (OpenID Connect):
+# no API token is stored in the repo or in GitHub secrets - the job proves its
+# identity to PyPI with a short-lived OIDC token scoped to this repo + workflow +
+# environment. See RELEASING.md for the one-time PyPI-side setup.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and check
+        run: |
+          pip install build twine
+          python -m build
+          twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/matrym-hashchain
+    permissions:
+      id-token: write # OIDC: the only credential, minted per-run, never stored
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

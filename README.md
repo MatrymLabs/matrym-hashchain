@@ -15,8 +15,12 @@ records** - the kind of thing a compliance, finance, or records system needs and
 ## Install
 
 ```bash
-pip install git+https://github.com/MatrymLabs/matrym-hashchain
+pip install matrym-hashchain                                    # once released to PyPI
+pip install git+https://github.com/MatrymLabs/matrym-hashchain  # or straight from GitHub, today
 ```
+
+PyPI publishing is wired up via [trusted publishing](RELEASING.md) (no stored token); the
+`pip install matrym-hashchain` line goes live with the first tagged release.
 
 ## Use
 
