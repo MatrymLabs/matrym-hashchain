@@ -69,6 +69,19 @@ Any break **fails loud** with `HashChainError` rather than returning a dishonest
 - `content_hash(mapping) -> str` - the canonical SHA-256 (sorted keys, no whitespace) the chain uses.
 - `Entry(seq, payload, prior_hash, content_hash)` - one link; `HashChainError` - the loud failure.
 
+## Test
+
+```bash
+pip install -e ".[dev]"   # pytest, ruff, mypy
+make check                # ruff + mypy + pytest (the full gate)
+pytest -q                 # the suite on its own
+```
+
+The suite pins both **acceptance and refusal**: a clean chain reads end to end and `verify`
+returns `True`, while every tampered case (an edited payload, a reorder, a deleted middle
+record, an append onto an already-broken log) fails loud with `HashChainError` rather than
+returning a dishonest history. CI runs it on every push.
+
 ## Provenance
 
 This is a **MatrymLabs Hardware Store part**: a pattern first proven in the
