@@ -110,10 +110,35 @@ def test_a_record_missing_a_field_fails_loud(tmp_path: Path) -> None:
         read(p)
 
 
-def test_appending_to_a_tampered_ledger_fails_loud(tmp_path: Path) -> None:
-    """You cannot quietly extend a history that has already been broken."""
+def test_appending_onto_a_tampered_tail_fails_loud(tmp_path: Path) -> None:
+    """append chains onto the tail, so a tampered TAIL is caught at once -- we never build on
+    garbage. (A tampered EARLIER record is caught on read instead; see the next test.)"""
     p = _ledger(tmp_path)
     append(p, {"n": 1})
     p.write_text(p.read_text().replace('"n": 1', '"n": 2'), encoding="utf-8")
     with pytest.raises(HashChainError, match="tampered"):
         append(p, {"n": 3})
+
+
+def test_appending_after_an_earlier_record_is_tampered_extends_but_verify_catches_it(
+    tmp_path: Path,
+) -> None:
+    """append is O(1) -- it reads only the tail, not the whole ledger -- so tampering a PAST
+    record no longer blocks a new append. Integrity holds: verify()/read() still catches it."""
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})  # an EARLIER, non-tail record, tampered below
+    append(p, {"n": 2})  # the tail, left intact so append can chain onto it
+    p.write_text(p.read_text().replace('"n": 1', '"n": 99'), encoding="utf-8")
+
+    extended = append(p, {"n": 3})  # succeeds: only the (untampered) tail is validated
+    assert extended.seq == 2
+    assert verify(p) is False  # but the whole-chain check still exposes the tampered past record
+    with pytest.raises(HashChainError, match="tampered"):
+        read(p)
+
+
+def test_a_record_larger_than_the_seek_block_still_chains(tmp_path: Path) -> None:
+    """The tail read walks back in blocks, so a record over one block still chains cleanly."""
+    p = _ledger(tmp_path)
+    append(p, {"blob": "x" * 9000})  # well over the 4 KiB backward-read block
+    assert append(p, {"n": 2}).seq == 1 and verify(p) is True
