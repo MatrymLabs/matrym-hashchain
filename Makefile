@@ -1,6 +1,6 @@
-.PHONY: env fix lint typecheck test check
+.PHONY: hooks env fix lint typecheck test check
 
-env:
+env: hooks
 	python -m venv .venv && .venv/bin/pip install -e '.[dev]'
 
 fix:
@@ -18,3 +18,7 @@ test:
 	pytest -q
 
 check: lint typecheck test
+
+hooks:
+	git config core.hooksPath scripts/hooks
+	@echo "✓ git hooks active (scripts/hooks) - commits on main are refused"
