@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from hashchain import GENESIS, HashChainError, append, content_hash, read, verify
+from hashchain import GENESIS, HashChainError, append, content_hash, head_hash, read, verify
 
 
 def _ledger(root: Path) -> Path:
@@ -162,3 +162,109 @@ def test_a_record_larger_than_the_seek_block_still_chains(tmp_path: Path) -> Non
     p = _ledger(tmp_path)
     append(p, {"blob": "x" * 9000})  # well over the 4 KiB backward-read block
     assert append(p, {"n": 2}).seq == 1 and verify(p) is True
+
+
+# --- signing (HMAC authorship) -----------------------------------------------------------------
+
+KEY = b"correct horse battery staple"
+WRONG_KEY = b"tr0ub4dor&3"  # a near-miss: different secret, same shape
+
+
+def test_a_signed_ledger_round_trips_with_its_key(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"event": "created"}, key=KEY)
+    append(p, {"event": "approved"}, key=KEY)
+    assert [e.payload["event"] for e in read(p, key=KEY)] == ["created", "approved"]
+    assert verify(p, key=KEY) is True
+
+
+def test_a_signed_ledger_read_without_the_key_is_refused(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"event": "created"}, key=KEY)
+    assert verify(p) is False  # no key -> the HMAC does not reproduce as a bare sha256
+    with pytest.raises(HashChainError, match="tampered"):
+        read(p)
+
+
+def test_a_signed_ledger_read_with_the_wrong_key_is_refused(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"event": "created"}, key=KEY)
+    assert verify(p, key=WRONG_KEY) is False
+    with pytest.raises(HashChainError, match="tampered"):
+        read(p, key=WRONG_KEY)
+
+
+def test_an_unsigned_ledger_read_with_a_key_is_refused(tmp_path: Path) -> None:
+    """The reverse mistake: a plain ledger validated as if it were signed must also fail loud."""
+    p = _ledger(tmp_path)
+    append(p, {"event": "created"})  # unsigned
+    assert verify(p, key=KEY) is False
+
+
+def test_a_tampered_signed_payload_is_still_detected(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"amount": 100}, key=KEY)
+    p.write_text(p.read_text().replace("100", "999"), encoding="utf-8")
+    assert verify(p, key=KEY) is False  # signing does not weaken integrity; it adds authorship
+
+
+def test_appending_to_a_signed_ledger_with_the_wrong_key_is_refused(tmp_path: Path) -> None:
+    """append validates the tail; with the wrong key the tail's HMAC will not reproduce, so a
+    forger without the secret cannot even extend the log."""
+    p = _ledger(tmp_path)
+    append(p, {"n": 1}, key=KEY)
+    with pytest.raises(HashChainError, match="tampered"):
+        append(p, {"n": 2}, key=WRONG_KEY)
+
+
+# --- truncation anchoring (head_hash) ----------------------------------------------------------
+
+
+def test_head_hash_of_an_empty_store_is_genesis(tmp_path: Path) -> None:
+    assert head_hash(_ledger(tmp_path)) == GENESIS
+
+
+def test_head_hash_is_the_last_records_content_hash(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})
+    last = append(p, {"n": 2})
+    assert head_hash(p) == last.content_hash
+
+
+def test_verify_with_a_matching_expected_head_is_true(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})
+    anchor = head_hash(p)
+    append(p, {"n": 2})
+    assert verify(p, expected_head=head_hash(p)) is True
+    assert verify(p, expected_head=anchor) is False  # the head moved on since we anchored
+
+
+def test_dropping_the_last_record_is_caught_by_the_anchor(tmp_path: Path) -> None:
+    """Truncation the chain alone cannot see: the surviving prefix still reads clean, but it no
+    longer ends at the head we anchored, so `expected_head` exposes the drop."""
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})
+    append(p, {"n": 2})
+    append(p, {"n": 3})
+    anchor = head_hash(p)
+    lines = p.read_text().splitlines()
+    p.write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")  # drop the last record
+    assert verify(p) is True  # the truncated chain reads clean on its own...
+    assert verify(p, expected_head=anchor) is False  # ...but the anchor catches the truncation
+
+
+def test_truncating_a_ledger_to_empty_is_caught_by_the_anchor(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})
+    anchor = head_hash(p)
+    p.write_text("", encoding="utf-8")  # everything dropped
+    assert verify(p, expected_head=anchor) is False  # GENESIS != the anchored head
+
+
+def test_head_hash_of_a_signed_ledger_needs_the_key(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"n": 1}, key=KEY)
+    assert head_hash(p, key=KEY) == read(p, key=KEY)[-1].content_hash
+    with pytest.raises(HashChainError, match="tampered"):
+        head_hash(p, key=WRONG_KEY)
