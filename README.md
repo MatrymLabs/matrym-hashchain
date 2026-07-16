@@ -2,6 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/matrym-hashchain)](https://pypi.org/project/matrym-hashchain/)
 [![CI](https://github.com/MatrymLabs/matrym-hashchain/actions/workflows/ci.yml/badge.svg)](https://github.com/MatrymLabs/matrym-hashchain/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/MatrymLabs/matrym-hashchain/branch/main/graph/badge.svg)](https://codecov.io/gh/MatrymLabs/matrym-hashchain)
 [![Python](https://img.shields.io/pypi/pyversions/matrym-hashchain)](https://pypi.org/project/matrym-hashchain/)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
@@ -107,15 +108,17 @@ Full method, table, and reproduction: [`benchmarks/RESULTS.md`](benchmarks/RESUL
 ## Test
 
 ```bash
-pip install -e ".[dev]"   # pytest, ruff, mypy
-make check                # ruff + mypy + pytest (the full gate)
-pytest -q                 # the suite on its own
+pip install -e ".[dev]"   # pytest, ruff, mypy, coverage, pip-audit
+make check                # ruff + mypy --strict + pytest at 100% coverage (the full gate)
+make security             # pip-audit the project's dependency closure (proves "zero deps")
+make bench                # the O(1)-append benchmark
 ```
 
 The suite pins both **acceptance and refusal**: a clean chain reads end to end and `verify`
 returns `True`, while every tampered case (an edited payload, a reorder, a deleted middle
-record, an append onto an already-broken log) fails loud with `HashChainError` rather than
-returning a dishonest history. CI runs it on every push.
+record, a mislinked record with a valid own hash, an append onto an already-broken log) fails
+loud with `HashChainError` rather than returning a dishonest history. CI runs it on every push
+across Python 3.10-3.13, at **100% line + branch coverage**, and audits the dependency closure.
 
 ## Provenance
 

@@ -23,5 +23,24 @@ jobs:
           ruff check .
       - name: Type-check (mypy --strict)
         run: mypy
-      - name: Test (pytest)
-        run: pytest -q
+      - name: Test with coverage (pytest, fail under 100%)
+        run: pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Audit THIS project's dependency closure (currently zero runtime deps), not the ambient venv,
+      # so the "dependencies: none" claim is verified and any future dep is scanned automatically.
+      - uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: .

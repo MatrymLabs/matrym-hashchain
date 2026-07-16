@@ -12,6 +12,11 @@ All notable changes to `matrym-hashchain`. Format follows
   `append` reads its payload object from an argument or from stdin.
 - **Benchmark evidence** for the O(1) append claim (`benchmarks/`, `make bench`): head to head
   against the pre-0.1.1 O(n) behavior, the current append stays flat as the ledger grows.
+- **Coverage and security gates.** CI now enforces **100% line + branch coverage** (`make
+  coverage`) and audits the project's dependency closure with `pip-audit` (`make security`), so
+  the "zero dependencies" claim is verified rather than asserted. Adds a Codecov badge.
+- A refusal test for a self-consistent record that points at the wrong predecessor (only the
+  chain-link check catches it) - the distinct break the earlier reorder/delete tests skipped past.
 
 ## [0.1.1] - 2026-07-15
 

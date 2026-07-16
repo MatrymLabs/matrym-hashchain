@@ -1,4 +1,4 @@
-.PHONY: hooks env fix lint typecheck test bench check
+.PHONY: hooks env fix lint typecheck test coverage security bench check
 
 env: hooks
 	python -m venv .venv && .venv/bin/pip install -e '.[dev]'
@@ -17,10 +17,16 @@ typecheck:
 test:
 	pytest -q
 
+coverage:
+	pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+
+security:
+	pip-audit .   # audit THIS project's dependency closure (zero runtime deps), not the ambient venv
+
 bench:
 	python benchmarks/bench_append.py
 
-check: lint typecheck test
+check: lint typecheck coverage
 
 hooks:
 	git config core.hooksPath scripts/hooks

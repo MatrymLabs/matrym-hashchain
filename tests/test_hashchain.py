@@ -8,6 +8,7 @@ loud with HashChainError rather than returning a dishonest history. Every test u
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -100,6 +101,25 @@ def test_a_malformed_line_fails_loud(tmp_path: Path) -> None:
     p = _ledger(tmp_path)
     p.write_text("{not valid json}\n", encoding="utf-8")
     with pytest.raises(HashChainError, match="unreadable JSON"):
+        read(p)
+
+
+def test_a_self_consistent_record_with_a_wrong_prior_link_is_detected(tmp_path: Path) -> None:
+    """A record can have the right seq AND a valid own content-hash yet still point at the wrong
+    predecessor. Only the chain-link check catches that -- the distinct failure mode this pins."""
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})  # record 0, genuine
+    forged_prior = "0" * 64  # a well-formed hash that is not record 0's content hash
+    payload = {"n": 2}
+    row = {
+        "seq": 1,
+        "payload": payload,
+        "prior_hash": forged_prior,
+        "content_hash": content_hash({"seq": 1, "payload": payload, "prior_hash": forged_prior}),
+    }
+    with p.open("a", encoding="utf-8") as handle:  # append a record valid in isolation, mislinked
+        handle.write(json.dumps(row, sort_keys=True) + "\n")
+    with pytest.raises(HashChainError, match="prior hash does not link"):
         read(p)
 
 

@@ -37,7 +37,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11", "pip-audit>=2.7"]
 
 [project.scripts]
 matrym-hashchain = "hashchain.cli:main"
@@ -67,3 +67,14 @@ files = ["src", "tests", "benchmarks"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["hashchain"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+  "if __name__ == .__main__.:",  # module entry guards run only as a script, not under pytest
+  "raise SystemExit",            # process-exit wiring at those same entry points
+]
