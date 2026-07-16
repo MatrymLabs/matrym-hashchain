@@ -46,6 +46,22 @@ read(ledger)                        # raises HashChainError: record 0 was tamper
 The store is plain JSON Lines (`.jsonl`) - one record per line, human-readable, greppable, and
 portable. No database, no daemon, no dependencies.
 
+## Command line
+
+The same three verbs, from one terminal line (installed as `matrym-hashchain`, or run
+`python -m hashchain`):
+
+```bash
+matrym-hashchain append audit.jsonl '{"event": "created", "who": "alice"}'
+matrym-hashchain append audit.jsonl '{"event": "approved", "who": "bob"}'
+matrym-hashchain read   audit.jsonl        # 0<TAB>{"event": "created", ...}
+matrym-hashchain verify audit.jsonl        # "clean: 2 record(s), head e7c1f28a3595"; exit 0
+```
+
+`verify` exits **0 on a clean chain and 1 on a broken one**, naming the tampered record on stderr,
+so it drops straight into a shell gate or a CI step. `append` also reads the payload object from
+stdin when you omit it (`... | matrym-hashchain append audit.jsonl`).
+
 ## What it guarantees (and what it doesn't)
 
 This proves **integrity**, honestly labelled:
