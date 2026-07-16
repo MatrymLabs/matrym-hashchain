@@ -39,6 +39,9 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
 
+[project.scripts]
+matrym-hashchain = "hashchain.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/MatrymLabs/matrym-hashchain"
 Repository = "https://github.com/MatrymLabs/matrym-hashchain"
