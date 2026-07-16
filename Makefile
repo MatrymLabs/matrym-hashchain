@@ -1,4 +1,4 @@
-.PHONY: hooks env fix lint typecheck test check
+.PHONY: hooks env fix lint typecheck test bench check
 
 env: hooks
 	python -m venv .venv && .venv/bin/pip install -e '.[dev]'
@@ -16,6 +16,9 @@ typecheck:
 
 test:
 	pytest -q
+
+bench:
+	python benchmarks/bench_append.py
 
 check: lint typecheck test
 
