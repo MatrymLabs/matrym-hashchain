@@ -60,6 +60,25 @@ This proves **integrity**, honestly labelled:
 
 Any break **fails loud** with `HashChainError` rather than returning a dishonest history.
 
+One more honest bound: this is a **single-writer** primitive. `append` is not guarded against two
+processes writing the same ledger at once (no file lock), so concurrent appends can interleave.
+Serialize writers (one process, or your own lock) if that's a risk; `read`/`verify` are read-only
+and safe alongside a single writer.
+
+## Performance
+
+`append` is **O(1) in ledger size**: it reads only the ledger's tail (a backward seek), not the
+whole chain, so appends stay fast as the log grows without bound. That claim ships with evidence,
+not just an assertion, measured head to head against the pre-0.1.1 O(n) behavior:
+
+| ledger size | O(n) baseline | O(1) current | speedup |
+|---:|---:|---:|---:|
+| 500 | 6.25 ms | 0.08 ms | 83x |
+| 16,000 | 229.13 ms | 0.08 ms | 3,011x |
+
+Across a 32x ledger growth the old append slowed **36.6x** (linear); the current one stayed **flat**.
+Full method, table, and reproduction: [`benchmarks/RESULTS.md`](benchmarks/RESULTS.md) (`make bench`).
+
 ## API
 
 - `append(path, payload) -> Entry` - validate, hash-chain, and append one record. Verifies the
