@@ -65,17 +65,33 @@ stdin when you omit it (`... | matrym-hashchain append audit.jsonl`).
 
 ## What it guarantees (and what it doesn't)
 
-This proves **integrity**, honestly labelled:
+This proves **integrity** by default, and closes the two classic gaps with two optional features:
 
 | Attack | Detected? |
 |---|---|
 | A payload was edited | ✅ content-hash mismatch |
 | Records were reordered or one was inserted | ✅ sequence / prior-hash mismatch |
 | A *middle* record was deleted | ✅ the next record's prior-hash no longer links |
-| The *last* record(s) were dropped | ❌ not by the chain alone - anchor the head hash elsewhere (a receipt, a second store) if truncation must be caught |
-| Who wrote a record (authenticity) | ❌ integrity is not authenticity - sign the head hash (HMAC or a key) to prove authorship |
+| The *last* record(s) were dropped | ✅ *with an anchor* - stash `head_hash(path)` elsewhere (a receipt, a second store, a witness) and check `verify(path, expected_head=...)`; the chain alone can't see truncation |
+| Who wrote a record (authenticity) | ✅ *with a signing key* - pass `key=...` to sign records with HMAC-SHA256; only a key-holder can produce or validate them |
 
 Any break **fails loud** with `HashChainError` rather than returning a dishonest history.
+
+### Signing and truncation, honestly
+
+```python
+KEY = b"a secret only writers hold"
+append(ledger, {"event": "created"}, key=KEY)   # HMAC-signed
+verify(ledger, key=KEY)                          # True; verify(ledger) alone -> False (no key)
+
+anchor = head_hash(ledger, key=KEY)              # stash this off-ledger
+# ... later, after someone drops the last record ...
+verify(ledger, key=KEY, expected_head=anchor)    # False -- the tail is gone
+```
+
+Honest label: HMAC is a **symmetric shared-secret MAC**. It proves a record was written by a holder
+of the key; it is **not** public-key non-repudiation (anyone with the key can both sign and verify).
+The same key must be passed to every `append`/`read`/`verify`/`head_hash` over a signed ledger.
 
 One more honest bound: this is a **single-writer** primitive. `append` is not guarded against two
 processes writing the same ledger at once (no file lock), so concurrent appends can interleave.
@@ -98,11 +114,20 @@ Full method, table, and reproduction: [`benchmarks/RESULTS.md`](benchmarks/RESUL
 
 ## API
 
-- `append(path, payload) -> Entry` - validate, hash-chain, and append one record. Verifies the
-  chain *before* extending it, so you can't quietly append onto an already-tampered log.
-- `read(path) -> list[Entry]` - read every record, verifying as it goes. Empty/missing store -> `[]`.
-- `verify(path) -> bool` - `True` if the ledger reads clean end to end, `False` if broken.
-- `content_hash(mapping) -> str` - the canonical SHA-256 (sorted keys, no whitespace) the chain uses.
+All functions take an optional keyword-only `key: bytes` (sign/verify with HMAC; omit for plain
+integrity).
+
+- `append(path, payload, *, key=None) -> Entry` - validate, hash-chain, and append one record.
+  Reads only the tail (O(1)), validating that record before extending, so you can't quietly append
+  onto a tampered tail.
+- `read(path, *, key=None) -> list[Entry]` - read every record, verifying as it goes. Empty/missing
+  store -> `[]`.
+- `verify(path, *, key=None, expected_head=None) -> bool` - `True` if the ledger reads clean end to
+  end; pass `expected_head` to also catch truncation.
+- `head_hash(path, *, key=None) -> str` - the last record's content hash (or `GENESIS` if empty);
+  the value you anchor off-ledger to detect truncation.
+- `content_hash(mapping, *, key=None) -> str` - the canonical digest the chain uses: SHA-256
+  unkeyed, HMAC-SHA256 when a `key` is given (sorted keys, no whitespace).
 - `Entry(seq, payload, prior_hash, content_hash)` - one link; `HashChainError` - the loud failure.
 
 ## Test

@@ -3,9 +3,16 @@
 All notable changes to `matrym-hashchain`. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this is 0.x, so the API may still move.
 
-## [Unreleased]
+## [0.2.0] - 2026-07-16
 
 ### Added
+- **Optional HMAC signing** closes the authenticity gap. Pass a secret `key=` to `append`/`read`/
+  `verify`/`head_hash`/`content_hash` and records are signed with HMAC-SHA256, so only a key-holder
+  can produce or validate them. `key=None` is unchanged plain-SHA-256 behavior (backward
+  compatible). Honestly labelled: a symmetric shared-secret MAC, not public-key non-repudiation.
+- **Truncation anchoring** closes the last-record-drop gap. `head_hash(path)` returns the tail's
+  content hash to stash off-ledger; `verify(path, expected_head=...)` confirms the ledger still
+  ends there, catching a dropped tail the chain alone cannot see.
 - **Command line interface.** `matrym-hashchain {append,read,verify}` (also `python -m hashchain`),
   a thin caller over the library's public functions. `verify` exits 0 on a clean chain and 1 on a
   broken one, naming the tampered record on stderr, so it drops into a shell gate or CI step;
