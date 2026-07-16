@@ -10,6 +10,8 @@ tmp_path; none touches real state.
 from __future__ import annotations
 
 import io
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -132,3 +134,21 @@ def test_version_flag_exits_clean(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as excinfo:
         main(["--version"])
     assert excinfo.value.code == 0
+
+
+def test_python_dash_m_entry_point_runs(tmp_path: Path) -> None:
+    """`python -m hashchain ...` must reach the same CLI. Prove it two ways: the module wires the
+    same `main`, and it actually runs as a real subprocess."""
+    import hashchain.__main__ as dunder_main
+
+    assert getattr(dunder_main, "main") is main  # noqa: B009  # the -m entry delegates to the CLI
+
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})
+    result = subprocess.run(
+        [sys.executable, "-m", "hashchain", "verify", str(p)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "clean: 1 record(s)" in result.stdout
