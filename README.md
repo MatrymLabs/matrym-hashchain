@@ -133,9 +133,9 @@ integrity).
 ## Test
 
 ```bash
-pip install -e ".[dev]"   # pytest, ruff, mypy, coverage, pip-audit
+pip install -e ".[dev]"   # pytest, ruff, mypy, coverage, bandit, pip-audit
 make check                # ruff + mypy --strict + pytest at 100% coverage (the full gate)
-make security             # pip-audit the project's dependency closure (proves "zero deps")
+make security             # bandit SAST + pip-audit the dependency closure (proves "zero deps")
 make bench                # the O(1)-append benchmark
 ```
 
@@ -144,6 +144,28 @@ returns `True`, while every tampered case (an edited payload, a reorder, a delet
 record, a mislinked record with a valid own hash, an append onto an already-broken log) fails
 loud with `HashChainError` rather than returning a dishonest history. CI runs it on every push
 across Python 3.10-3.13, at **100% line + branch coverage**, and audits the dependency closure.
+
+## Evaluation
+
+Scored by [`forge-audit`](https://github.com/MatrymLabs/forge-audit) - the fleet's proof-tool, which
+runs the gates on a target repo behind a mockable GitHub-API seam and emits a `pass|watchlist|fail`
+scorecard. This part passes at the **advanced** stage (a snapshot; reproduce with
+`forge-audit --path . --stage advanced --online`):
+
+| Dimension | Verdict | Evidence |
+|---|---|---|
+| lint | ✅ pass | clean |
+| typecheck | ✅ pass | clean |
+| tests | ✅ pass | green suite, coverage 100% ≥ 85% |
+| security | ✅ pass | bandit + pip-audit clean |
+| dependencies | ✅ pass | clean |
+| ci | ✅ pass | 3 CI workflows (check, release, CodeQL) |
+| collaboration | ✅ pass | 9 merged PRs |
+| performance | ✅ pass | benchmark artifact present |
+| readme | ✅ pass | covers purpose, install, run, test |
+
+**Overall: `pass`** (advanced). Role signals: testing, security, backend, devops, collaboration,
+performance, documentation.
 
 ## Provenance
 

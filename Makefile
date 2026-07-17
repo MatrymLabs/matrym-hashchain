@@ -21,7 +21,8 @@ coverage:
 	pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 
 security:
-	pip-audit .   # audit THIS project's dependency closure (zero runtime deps), not the ambient venv
+	bandit -q -c pyproject.toml -r src   # SAST over the shipped library
+	pip-audit .                          # audit THIS project's dependency closure, not the ambient venv
 
 bench:
 	python benchmarks/bench_append.py

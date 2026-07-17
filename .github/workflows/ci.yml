@@ -39,6 +39,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: SAST (bandit)
+        run: |
+          pip install bandit
+          bandit -q -c pyproject.toml -r src
       # Audit THIS project's dependency closure (currently zero runtime deps), not the ambient venv,
       # so the "dependencies: none" claim is verified and any future dep is scanned automatically.
       - uses: pypa/gh-action-pip-audit@v1.1.0

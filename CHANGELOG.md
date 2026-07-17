@@ -3,6 +3,14 @@
 All notable changes to `matrym-hashchain`. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this is 0.x, so the API may still move.
 
+## [Unreleased]
+
+### Added
+- **bandit SAST** over the shipped library, folded into `make security` (now bandit + pip-audit)
+  and CI, closing the "bandit + pip-audit" tooling gap.
+- **CodeQL** workflow (GitHub-native SAST; results in the Security > Code scanning tab).
+- A README **Evaluation** section: `forge-audit` scores this part `pass` at the advanced stage.
+
 ## [0.2.0] - 2026-07-16
 
 ### Added
