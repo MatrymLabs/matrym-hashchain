@@ -118,11 +118,12 @@ not just an assertion, measured head to head against the pre-0.1.1 O(n) behavior
 
 | ledger size | O(n) baseline | O(1) current | speedup |
 |---:|---:|---:|---:|
-| 500 | 6.25 ms | 0.08 ms | 83x |
-| 16,000 | 229.13 ms | 0.08 ms | 3,011x |
+| 500 | 7.15 ms | 0.08 ms | 93x |
+| 64,000 | 930.52 ms | 0.08 ms | 11,941x |
 
-Across a 32x ledger growth the old append slowed **36.6x** (linear); the current one stayed **flat**.
-Full method, table, and reproduction: [`benchmarks/RESULTS.md`](benchmarks/RESULTS.md) (`make bench`).
+Across a 128x ledger growth the old append slowed **130x** (linear, ~1 s per write at 64k records);
+the current one stayed **flat** at ~0.08 ms. Full method, table, and reproduction:
+[`benchmarks/RESULTS.md`](benchmarks/RESULTS.md) (`make bench`).
 
 ## API
 

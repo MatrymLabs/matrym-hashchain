@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from hashchain import GENESIS, append, content_hash, read, verify  # noqa: E402
 
-SIZES = (500, 2_000, 8_000, 16_000)
+SIZES = (500, 2_000, 8_000, 16_000, 64_000)
 REPS = 50
 AppendImpl = Callable[[Path, dict[str, Any]], object]
 

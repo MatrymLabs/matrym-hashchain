@@ -8,13 +8,15 @@ Host: Linux-6.18.34+rpt-rpi-2712-aarch64-with-glibc2.41 | Python 3.13.5 | reps=5
 
 | ledger size (records) | O(n) baseline (ms) | O(1) current (ms) | speedup |
 |---:|---:|---:|---:|
-| 500 | 6.2526 | 0.0751 | 83x |
-| 2,000 | 29.4551 | 0.0754 | 391x |
-| 8,000 | 113.6527 | 0.0969 | 1,172x |
-| 16,000 | 229.1265 | 0.0761 | 3,011x |
+| 500 | 7.1492 | 0.0767 | 93x |
+| 2,000 | 26.5958 | 0.0775 | 343x |
+| 8,000 | 116.4555 | 0.0768 | 1,516x |
+| 16,000 | 229.5320 | 0.0781 | 2,939x |
+| 64,000 | 930.5208 | 0.0779 | 11,941x |
 
-Ledger grew 32x (500 -> 16,000 records). Over that span the baseline append slowed **36.6x** (grows
-with N, O(n)); the current append changed **1.0x** (flat within noise, O(1)).
+Ledger grew 128x (500 -> 64,000 records). Over that span the baseline append slowed **130.2x** (grows
+with N, near-perfectly linear, O(n)); the current append changed **1.0x** (flat within noise, O(1)).
+At 64k records the old append costs nearly a full second per write; the current one still costs ~0.08 ms.
 
 ## What is being compared
 
