@@ -3,7 +3,7 @@
 All notable changes to `matrym-hashchain`. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this is 0.x, so the API may still move.
 
-## [Unreleased]
+## [0.3.0] - 2026-07-16
 
 ### Added
 - **CLI signing and truncation anchoring.** `--key-env VAR` signs/verifies with the HMAC key held
@@ -13,6 +13,8 @@ All notable changes to `matrym-hashchain`. Format follows
   and CI, closing the "bandit + pip-audit" tooling gap.
 - **CodeQL** workflow (GitHub-native SAST; results in the Security > Code scanning tab).
 - A README **Evaluation** section: `forge-audit` scores this part `pass` at the advanced stage.
+- A **64k-record tier** in the append benchmark (`make bench`): at 64k the O(n) baseline costs
+  ~930 ms per append while the O(1) current append still costs ~0.08 ms (~11,900x).
 
 ## [0.2.0] - 2026-07-16
 
