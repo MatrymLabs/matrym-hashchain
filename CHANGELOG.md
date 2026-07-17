@@ -6,6 +6,9 @@ All notable changes to `matrym-hashchain`. Format follows
 ## [Unreleased]
 
 ### Added
+- **CLI signing and truncation anchoring.** `--key-env VAR` signs/verifies with the HMAC key held
+  in an environment variable (never on the command line, so it can't leak to the process table); a
+  new `head` command prints the anchor hash and `verify --expected-head HASH` catches a dropped tail.
 - **bandit SAST** over the shipped library, folded into `make security` (now bandit + pip-audit)
   and CI, closing the "bandit + pip-audit" tooling gap.
 - **CodeQL** workflow (GitHub-native SAST; results in the Security > Code scanning tab).

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from hashchain import HashChainError, append, read
+from hashchain import HashChainError, append, head_hash, read
 from hashchain.cli import main
 
 
@@ -134,6 +134,69 @@ def test_version_flag_exits_clean(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as excinfo:
         main(["--version"])
     assert excinfo.value.code == 0
+
+
+# --- signing and truncation anchoring via the CLI ---------------------------------------------
+
+ENV = "HC_TEST_KEY"
+
+
+def test_signed_append_and_verify_via_key_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv(ENV, "correct horse battery staple")
+    p = _ledger(tmp_path)
+    assert main(["append", str(p), '{"event": "created"}', "--key-env", ENV]) == 0
+    assert main(["verify", str(p), "--key-env", ENV]) == 0
+    assert "clean: 1 record(s)" in capsys.readouterr().out
+
+
+def test_a_signed_ledger_verified_without_the_key_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv(ENV, "the secret")
+    p = _ledger(tmp_path)
+    main(["append", str(p), '{"n": 1}', "--key-env", ENV])
+    assert main(["verify", str(p)]) == 1  # no key -> the HMAC does not reproduce
+    assert "tampered" in capsys.readouterr().err
+
+
+def test_key_env_pointing_at_an_unset_variable_fails_loud(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    p = _ledger(tmp_path)
+    assert main(["append", str(p), '{"n": 1}', "--key-env", "DEFINITELY_UNSET_VAR"]) == 1
+    assert "unset or empty" in capsys.readouterr().err
+    assert read(p) == []  # nothing was written
+
+
+def test_head_command_prints_the_head_hash(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    p = _ledger(tmp_path)
+    last = append(p, {"n": 1})
+    assert main(["head", str(p)]) == 0
+    assert capsys.readouterr().out.strip() == last.content_hash
+
+
+def test_verify_with_a_matching_expected_head_passes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})
+    assert main(["verify", str(p), "--expected-head", head_hash(p)]) == 0
+
+
+def test_verify_catches_truncation_via_expected_head(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    p = _ledger(tmp_path)
+    append(p, {"n": 1})
+    append(p, {"n": 2})
+    anchor = head_hash(p)
+    p.write_text(p.read_text().splitlines()[0] + "\n", encoding="utf-8")  # drop the last record
+    assert main(["verify", str(p), "--expected-head", anchor]) == 1
+    assert "head mismatch" in capsys.readouterr().err
 
 
 def test_python_dash_m_entry_point_runs(tmp_path: Path) -> None:
