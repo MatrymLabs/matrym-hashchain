@@ -63,6 +63,18 @@ matrym-hashchain verify audit.jsonl        # "clean: 2 record(s), head e7c1f28a3
 so it drops straight into a shell gate or a CI step. `append` also reads the payload object from
 stdin when you omit it (`... | matrym-hashchain append audit.jsonl`).
 
+Signing and truncation work from the CLI too. The HMAC key is read from an **environment variable**
+(never the command line, so it can't leak into the process table or shell history):
+
+```bash
+export LEDGER_KEY='a secret only writers hold'
+matrym-hashchain append audit.jsonl '{"event": "created"}' --key-env LEDGER_KEY
+matrym-hashchain verify audit.jsonl --key-env LEDGER_KEY          # exit 0; without it -> exit 1
+
+anchor=$(matrym-hashchain head audit.jsonl --key-env LEDGER_KEY)  # stash off-ledger
+matrym-hashchain verify audit.jsonl --key-env LEDGER_KEY --expected-head "$anchor"  # catches a dropped tail
+```
+
 ## What it guarantees (and what it doesn't)
 
 This proves **integrity** by default, and closes the two classic gaps with two optional features:
