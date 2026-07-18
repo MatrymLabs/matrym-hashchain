@@ -48,3 +48,15 @@ jobs:
       - uses: pypa/gh-action-pip-audit@v1.1.0
         with:
           inputs: .
+      # SBOM (CycloneDX) of the installed environment. Reproducible from this commit;
+      # git-ignored, uploaded as a non-blocking artifact. Supply-chain evidence (SSDF PS.3).
+      - name: Software bill of materials (SBOM)
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py environment -o sbom.cdx.json
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom.cdx.json
+          if-no-files-found: warn

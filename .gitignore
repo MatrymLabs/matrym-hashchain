@@ -9,3 +9,6 @@ build/
 .coverage
 coverage.xml
 *.pyc
+
+# CycloneDX SBOM (reproducible from the recorded commit; produced in CI)
+sbom.cdx.json
