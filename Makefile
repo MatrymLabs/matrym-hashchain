@@ -1,4 +1,4 @@
-.PHONY: hooks env fix lint typecheck test coverage security bench check
+.PHONY: hooks env fix lint typecheck test coverage security sbom bench check
 
 env: hooks
 	python -m venv .venv && .venv/bin/pip install -e '.[dev]'
@@ -23,6 +23,10 @@ coverage:
 security:
 	bandit -q -c pyproject.toml -r src   # SAST over the shipped library
 	pip-audit .                          # audit THIS project's dependency closure, not the ambient venv
+
+sbom:
+	cyclonedx-py environment -o sbom.cdx.json   # CycloneDX SBOM of the installed env (stdlib-only runtime)
+	@echo "SBOM -> sbom.cdx.json"
 
 bench:
 	python benchmarks/bench_append.py
