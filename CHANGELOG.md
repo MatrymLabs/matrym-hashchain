@@ -3,6 +3,18 @@
 All notable changes to `matrym-hashchain`. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this is 0.x, so the API may still move.
 
+## [0.4.0] - 2026-07-22
+
+### Added
+- **Conformance vectors (`hashchain.conformance`).** Canonical `(payload -> content_hash)` fixtures
+  that DEFINE the wire format: `CONFORMANCE_PAYLOADS`, `CONFORMANCE_HASHES`, `CONFORMANCE_HEAD`, and
+  `expected_chain()`. The package's own `append()` is pinned to reproduce them
+  (`tests/test_conformance.py`), so a digest change is a deliberate, versioned break, never silent
+  drift. The MatrymLabs fleet's *harvested* ledgers (re-implemented per ADR 0002, not imported) each
+  assert they reproduce these hashes - turning "harvest is faithful reuse" into a tested invariant
+  with zero runtime coupling, and giving this published package a real job as the fleet's
+  ledger-format authority.
+
 ## [0.3.0] - 2026-07-16
 
 ### Added
